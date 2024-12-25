@@ -1,13 +1,18 @@
 #include "../exercise.h"
 
 constexpr unsigned long long fibonacci(int i) {
+    constexpr auto go = [](auto &&self, unsigned long long f1, unsigned long long f2, int i) -> unsigned long long {
+        if (i == 1) return f2;
+        return self(self, f2, f1 + f2, i - 1);
+    };
+
     switch (i) {
         case 0:
             return 0;
         case 1:
             return 1;
         default:
-            return fibonacci(i - 1) + fibonacci(i - 2);
+            return go(go, 0, 1, i);
     }
 }
 

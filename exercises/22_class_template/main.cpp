@@ -1,5 +1,10 @@
 ﻿#include "../exercise.h"
 
+#include <algorithm>
+#include <numeric>
+#include <ranges>
+#include <vector>
+
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
 template<class T>
@@ -10,6 +15,8 @@ struct Tensor4D {
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        std::memcpy(shape, shape_, 4 * sizeof(int));
+        size = std::accumulate(shape, shape + 4, 1, [](int a, int b) -> int { return a * b; });
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -28,6 +35,46 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+        std::vector<T> resDatas;
+        unsigned int newShape[4];
+        for (int i = 3; i >= 0; --i) {
+            newShape[i] = std::max(shape[i], others.shape[i]);
+        }
+        auto alignData = [&newShape](const unsigned int shape[4], T *data) -> std::vector<T> {
+            std::vector<std::vector<std::vector<std::vector<T>>>> tmp0;
+            std::vector<T> res;
+            unsigned int offset = 0;
+            for (unsigned int i = 0; i < shape[0]; ++i) {
+                std::vector<std::vector<std::vector<T>>> tmp1;
+                for (unsigned int j = 0; j < shape[1]; ++j) {
+                    std::vector<std::vector<T>> tmp2;
+                    for (unsigned int u = 0; u < shape[2]; ++u) {
+                        std::vector<T> tmp3;
+                        for (unsigned int v = 0; v < shape[3]; ++v, ++offset) {
+                            tmp3.push_back(*(data + offset));
+                        }
+                        if (shape[3] == 1) tmp3 = std ::vector(newShape[3], tmp3.back());
+                        tmp2.push_back(tmp3);
+                    }
+                    if (shape[2] == 1) tmp2 = std ::vector(newShape[2], tmp2.back());
+                    tmp1.push_back(tmp2);
+                }
+                if (shape[1] == 1) tmp1 = std ::vector(newShape[1], tmp1.back());
+                tmp0.push_back(tmp1);
+            }
+            if (shape[0] == 1) tmp0 = std ::vector(newShape[0], tmp0.back());
+            for (auto d : tmp0 | std::views::join | std::views::join | std::views::join) res.push_back(d);
+            return res;
+        };
+
+        std::ranges::transform(alignData(shape, data), alignData(others.shape, others.data), std::back_inserter(resDatas), [](T a, T b) { return a + b; });
+
+        std::memcpy(shape, newShape, 4 * sizeof(int));
+        delete[] data;
+        int size = std::accumulate(shape, shape + 4, 1, [](int a, int b) -> int { return a * b; });
+        data = new T[size];
+        std::memcpy(data, resDatas.data(), size * sizeof(T));
+
         return *this;
     }
 };
