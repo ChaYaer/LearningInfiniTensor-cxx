@@ -1,6 +1,7 @@
 ﻿#include "../exercise.h"
 #include <vector>
 
+#include <algorithm>
 #include <ranges>
 
 // 张量即多维数组。连续存储张量即逻辑结构与存储结构一致的张量。

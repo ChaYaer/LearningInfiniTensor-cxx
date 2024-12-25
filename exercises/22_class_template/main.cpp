@@ -1,6 +1,8 @@
 ﻿#include "../exercise.h"
 
+
 #include <algorithm>
+#include <cstring>
 #include <numeric>
 #include <ranges>
 #include <vector>
